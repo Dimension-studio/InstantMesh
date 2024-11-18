@@ -1,5 +1,6 @@
 # arguments for serverside inference
 ARG IMG_PROMPT="examples/hatsune_miku.png"
+ARG OUTPUT_DIR="outputs/"
 
 # get the development image from nvidia cuda 12.1
 FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04
@@ -57,4 +58,4 @@ RUN pip install -r requirements.txt
 COPY . /workspace/instantmesh
 
 # Run the command when the container starts
-CMD ["python", "run.py", "configs/instant-mesh-large.yaml", IMG_PROMPT, "--save_video"]
+CMD ["python", "run.py", "configs/instant-mesh-large.yaml", IMG_PROMPT, "--save_video", "--output_path=$OUTPUT_DIR"]
