@@ -58,4 +58,6 @@ RUN pip install -r requirements.txt
 COPY . /workspace/instantmesh
 
 # Run the command when the container starts
-CMD ["python", "run.py", "configs/instant-mesh-large.yaml", IMG_PROMPT, "--save_video", "--output_path=$OUTPUT_DIR"]
+VOLUME /workspace/instantmesh/database
+VOLUME /workspace/instantmesh/ckpts
+ENTRYPOINT ["python", "run.py", "configs/instant-mesh-large.yaml", "--save_video"]

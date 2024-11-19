@@ -38,6 +38,11 @@ outputs/
 figures*/
 
 # Useless Files
-*.sh
 blender/
 .restore/
+
+# database files
+database
+
+# python venv
+venv*

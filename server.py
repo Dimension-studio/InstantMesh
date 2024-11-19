@@ -2,8 +2,12 @@ from fastapi import FastAPI, File, UploadFile
 from fastapi.responses import HTMLResponse, FileResponse
 
 import subprocess
+import logging 
 
 import server_utils
+
+logger = logging.getLogger('uvicorn.error')
+logger.setLevel(logging.DEBUG)
 
 app = FastAPI()
 
@@ -38,12 +42,13 @@ async def submit_image_prompt(file: UploadFile): #todo: instead, return a URL li
 
     # we first need to run dockerbuild to pass the IMG_PROMPT arg to run.py
     # docker build --build-arg IMG_PROMPT="examples/hatsune_miku.png" -t instantmesh -f docker/Dockerfile .
-    subprocess.run(["docker", "build", "--build-arg", f"IMG_PROMPT={path_to_mesh_input}", f"OUTPUT_DIR={output_dir}", "-t", "instantmesh", "-f", "docker/Dockerfile_server", "."])
+    output = subprocess.run(["docker", "build", "--build-arg", f"IMG_PROMPT={path_to_mesh_input}", f"OUTPUT_DIR={output_dir}", "-t", "instantmesh", "-f", "docker/Dockerfile_server", "."], env={"MODEL_DIR":"/data/models/"}, capture_output=True)
+    print(output)
 
     # then run inference
 
     # docker run -it -p 43839:43839 --platform=linux/amd64 --gpus all -v $MODEL_DIR:/workspace/instantmesh/models instantmesh
-    subprocess.run(["docker", "run", "-it", "-p", "43839:43839", "--platform=linux/amd64", "--gpus", "all", "-v", "$MODEL_DIR:/workspace/instantmesh/models", "instantmesh"])
+    #subprocess.run(["docker", "run", "-it", "-p", "43839:43839", "--platform=linux/amd64", "--gpus", "all", "-v", "$MODEL_DIR:/workspace/instantmesh/models", "instantmesh"], env={"MODEL_DIR":"/data/models/"})
 
     return {"meshid":next_meshid}
 
