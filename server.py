@@ -30,7 +30,7 @@ async def root():
 async def submit_image_prompt(file: UploadFile): #todo: instead, return a URL like "mesh/upload/{meshid}" to avoid blocking this page
     next_meshid = server_utils.get_next_meshid()
 
-    server_utils.create_meshid_dir(next_meshid) #this command needs to be threadsafe!
+    server_utils.create_meshid_dir(next_meshid) #this function needs to be threadsafe!
 
     path_to_mesh_input = server_utils.get_meshid_input_file_str(next_meshid, file.filename)
 
@@ -40,15 +40,8 @@ async def submit_image_prompt(file: UploadFile): #todo: instead, return a URL li
 
     output_dir = server_utils.get_mesh_id_output_dir(next_meshid)
 
-    # we first need to run dockerbuild to pass the IMG_PROMPT arg to run.py
-    # docker build --build-arg IMG_PROMPT="examples/hatsune_miku.png" -t instantmesh -f docker/Dockerfile .
-    output = subprocess.run(["docker", "build", "--build-arg", f"IMG_PROMPT={path_to_mesh_input}", f"OUTPUT_DIR={output_dir}", "-t", "instantmesh", "-f", "docker/Dockerfile_server", "."], env={"MODEL_DIR":"/data/models/"}, capture_output=True)
-    print(output)
-
-    # then run inference
-
-    # docker run -it -p 43839:43839 --platform=linux/amd64 --gpus all -v $MODEL_DIR:/workspace/instantmesh/models instantmesh
-    #subprocess.run(["docker", "run", "-it", "-p", "43839:43839", "--platform=linux/amd64", "--gpus", "all", "-v", "$MODEL_DIR:/workspace/instantmesh/models", "instantmesh"], env={"MODEL_DIR":"/data/models/"})
+    print(f"Running command: ./simplerun.sh {path_to_mesh_input} {output_dir}")
+    subprocess.run(["./simplerun.sh", f"{path_to_mesh_input}", f"{output_dir}"])
 
     return {"meshid":next_meshid}
 
@@ -66,5 +59,6 @@ async def get_mesh_status(mesh_id):
 
 @app.get("/mesh/get/{mesh_id}")
 async def get_mesh(mesh_id):
-    meshes = server_utils.get_instantmesh_meshes(mesh_id, INSTANT_MESH_CONFIG)
-    return FileResponse(meshes[0])
+    mesh = server_utils.get_instantmesh_mesh(mesh_id, INSTANT_MESH_CONFIG)
+    print(mesh)
+    return FileResponse(mesh)

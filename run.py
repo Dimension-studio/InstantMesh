@@ -18,7 +18,7 @@ from src.utils.camera_util import (
     get_zero123plus_input_cameras,
     get_circular_camera_poses,
 )
-from src.utils.mesh_util import save_obj, save_obj_with_mtl
+from src.utils.mesh_util import save_obj, save_obj_with_mtl, save_glb
 from src.utils.infer_util import remove_background, resize_foreground, save_video
 
 
@@ -78,6 +78,7 @@ parser.add_argument('--view', type=int, default=6, choices=[4, 6], help='Number 
 parser.add_argument('--no_rembg', action='store_true', help='Do not remove input background.')
 parser.add_argument('--export_texmap', action='store_true', help='Export a mesh with texture map.')
 parser.add_argument('--save_video', action='store_true', help='Save a circular-view video.')
+parser.add_argument('--model_cache_path', default='/workspace/instantmesh/ckpts', type=str, help='path to model cache directory.')
 args = parser.parse_args()
 seed_everything(args.seed)
 
@@ -89,6 +90,7 @@ config = OmegaConf.load(args.config)
 config_name = os.path.basename(args.config).replace('.yaml', '')
 model_config = config.model_config
 infer_config = config.infer_config
+print(f'Samuel: {infer_config=}')
 
 IS_FLEXICUBES = True if config_name.startswith('instant-mesh') else False
 
@@ -100,6 +102,7 @@ pipeline = DiffusionPipeline.from_pretrained(
     "sudo-ai/zero123plus-v1.2", 
     custom_pipeline="zero123plus",
     torch_dtype=torch.float16,
+    cache_dir=args.model_cache_path
 )
 pipeline.scheduler = EulerAncestralDiscreteScheduler.from_config(
     pipeline.scheduler.config, timestep_spacing='trailing'
@@ -107,10 +110,11 @@ pipeline.scheduler = EulerAncestralDiscreteScheduler.from_config(
 
 # load custom white-background UNet
 print('Loading custom white-background unet ...')
+print(f'Jaspreet: infer_config.unet_path:{infer_config.unet_path}')
 if os.path.exists(infer_config.unet_path):
     unet_ckpt_path = infer_config.unet_path
 else:
-    unet_ckpt_path = hf_hub_download(repo_id="TencentARC/InstantMesh", filename="diffusion_pytorch_model.bin", repo_type="model")
+    unet_ckpt_path = hf_hub_download(repo_id="TencentARC/InstantMesh", filename="diffusion_pytorch_model.bin", repo_type="model", cache_dir=args.model_cache_path)
 state_dict = torch.load(unet_ckpt_path, map_location='cpu')
 pipeline.unet.load_state_dict(state_dict, strict=True)
 
@@ -119,10 +123,11 @@ pipeline = pipeline.to(device)
 # load reconstruction model
 print('Loading reconstruction model ...')
 model = instantiate_from_config(model_config)
+print(f'Jaspreet: infer_config.model_path:{infer_config.model_path}')
 if os.path.exists(infer_config.model_path):
     model_ckpt_path = infer_config.model_path
 else:
-    model_ckpt_path = hf_hub_download(repo_id="TencentARC/InstantMesh", filename=f"{config_name.replace('-', '_')}.ckpt", repo_type="model")
+    model_ckpt_path = hf_hub_download(repo_id="TencentARC/InstantMesh", filename=f"{config_name.replace('-', '_')}.ckpt", repo_type="model", cache_dir=args.model_cache_path)
 state_dict = torch.load(model_ckpt_path, map_location='cpu')['state_dict']
 state_dict = {k[14:]: v for k, v in state_dict.items() if k.startswith('lrm_generator.')}
 model.load_state_dict(state_dict, strict=True)
@@ -212,6 +217,7 @@ for idx, sample in enumerate(outputs):
 
         # get mesh
         mesh_path_idx = os.path.join(mesh_path, f'{name}.obj')
+        mesh_glb_fpath = os.path.join(mesh_path, f"{name}.glb")
 
         mesh_out = model.extract_mesh(
             planes,
@@ -231,6 +237,8 @@ for idx, sample in enumerate(outputs):
         else:
             vertices, faces, vertex_colors = mesh_out
             save_obj(vertices, faces, vertex_colors, mesh_path_idx)
+            save_glb(vertices, faces, vertex_colors, mesh_glb_fpath)
+
         print(f"Mesh saved to {mesh_path_idx}")
 
         # get video

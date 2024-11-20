@@ -36,7 +36,8 @@ def get_mesh_id_output_dir(meshid: int):
     return os.path.join(DATABASE_FOLDER, str(meshid), 'output')
 
 def get_meshid_input_file_str(meshid: int, input_filename: str) -> str:
-    return os.path.join(get_mesh_id_input_dir(meshid), input_filename)
+    filename, filext = os.path.splitext(input_filename)
+    return os.path.join(get_mesh_id_input_dir(meshid), f'{meshid}{filext}')
 
 def get_instantmesh_dir(meshid: int, config_name: str):
     return os.path.join(get_mesh_id_output_dir(meshid), config_name)
@@ -44,8 +45,8 @@ def get_instantmesh_dir(meshid: int, config_name: str):
 def get_instantmesh_meshes_dir(meshid: int, config_name: str):
     return os.path.join(get_instantmesh_dir(meshid, config_name), 'meshes')
 
-def get_instantmesh_meshes(meshid: int, config_name: str):
-    return os.listdir(get_instantmesh_meshes_dir(meshid, config_name))
+def get_instantmesh_mesh(meshid: int, config_name: str):
+    return os.path.join(get_instantmesh_meshes_dir(meshid, config_name), f'{meshid}.glb')
 
 class MeshStatus(Enum):
     NOT_EXISTS = 1,
@@ -66,5 +67,3 @@ def get_mesh_status(meshid: int, config_name: str):
         return MeshStatus.PROCESSING
 
     return MeshStatus.EXISTS
-
-#print(get_meshid_input_file_str(2, 'testfile.png'))

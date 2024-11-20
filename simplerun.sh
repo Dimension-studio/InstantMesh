@@ -19,6 +19,8 @@ if [ -z "$input_image_path" ]; then
     exit 1
 fi
 
+#export MODEL_DIR=$HOME/data/models/instantmesh/
+
 docker run -i -t --gpus all \
     -v "./database:/workspace/instantmesh/database" \
     -v "/data/models/instantmesh:/workspace/instantmesh/ckpts" \

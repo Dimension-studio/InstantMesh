@@ -1,6 +1,7 @@
 pytorch-lightning==2.1.2
 gradio>=3.41.2
 huggingface-hub>=0.23.0
+onnxruntime-gpu  # https://onnxruntime.ai/docs/install/#install-onnx-runtime-gpu-cuda-12x
 einops
 omegaconf
 torchmetrics
